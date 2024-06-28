@@ -2,17 +2,22 @@ import { fetchImages } from './js/pixabay-api.js';
 import { renderGallery } from './js/render-functions.js';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 import './css/styles.css';
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('#search-form');
   const gallery = document.querySelector('.gallery');
+  const loadMoreButton = document.querySelector('.load-more');
   const loader = document.querySelector('.loader');
+  let currentPage = 1;
+  let currentQuery = '';
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const query = event.currentTarget.elements.query.value.trim();
-    if (!query) {
+    currentQuery = event.currentTarget.elements.query.value.trim();
+    if (!currentQuery) {
       iziToast.error({
         title: 'Error',
         message: 'Please enter a search query!',
@@ -20,9 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     gallery.innerHTML = '';
+    currentPage = 1;
+    loadMoreButton.classList.add('hidden');
     loader.classList.add('visible');
     try {
-      const data = await fetchImages(query);
+      const data = await fetchImages(currentQuery, currentPage);
       if (data.hits.length === 0) {
         iziToast.error({
           title: 'Error',
@@ -30,6 +37,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       } else {
         renderGallery(data.hits);
+        loadMoreButton.classList.remove('hidden');
+      }
+    } catch (error) {
+      iziToast.error({
+        title: 'Error',
+        message: error.message,
+      });
+    } finally {
+      loader.classList.remove('visible');
+    }
+  });
+
+  loadMoreButton.addEventListener('click', async () => {
+    currentPage += 1;
+    loader.classList.add('visible');
+    try {
+      const data = await fetchImages(currentQuery, currentPage);
+      renderGallery(data.hits, true); 
+      if (data.hits.length === 0 || currentPage * 12 >= data.totalHits) {
+        loadMoreButton.classList.add('hidden');
+        iziToast.info({
+          title: 'Info',
+          message: "We're sorry, but you've reached the end of search results.",
+        });
       }
     } catch (error) {
       iziToast.error({
@@ -41,4 +72,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
