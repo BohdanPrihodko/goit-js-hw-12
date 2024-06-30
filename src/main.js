@@ -2,8 +2,7 @@ import { fetchImages } from './js/pixabay-api.js';
 import { renderGallery } from './js/render-functions.js';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
-import SimpleLightbox from 'simplelightbox';
-import 'simplelightbox/dist/simple-lightbox.min.css';
+
 import './css/styles.css';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const loader = document.querySelector('.loader');
   let currentPage = 1;
   let currentQuery = '';
+
+  function smoothScroll() {
+    const { height: cardHeight } = document.querySelector('.gallery').firstElementChild.getBoundingClientRect();
+    window.scrollBy({
+      top: cardHeight * 2,
+      behavior: 'smooth',
+    });
+  }
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -54,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loader.classList.add('visible');
     try {
       const data = await fetchImages(currentQuery, currentPage);
-      renderGallery(data.hits, true); 
+      renderGallery(data.hits); 
+      smoothScroll();  
       if (data.hits.length === 0 || currentPage * 12 >= data.totalHits) {
         loadMoreButton.classList.add('hidden');
         iziToast.info({
